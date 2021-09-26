@@ -13,7 +13,7 @@ TOKEN = config.TOKEN
 bot = commands.Bot(command_prefix='r/')
 bot.remove_command('help')
 
-channel_remind = 784792085182152744
+channel_remind = <CHANNEL_ID>
 
 @bot.event
 async def on_ready():
