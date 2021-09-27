@@ -1,4 +1,4 @@
-# Epsilone
+# Epsilon
 Discord bot to remind you something.
 
 ## The command for the moment is:
