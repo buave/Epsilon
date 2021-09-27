@@ -7,6 +7,7 @@ from discord.ext import commands , tasks
 import time
 import sqlite3
 import config
+# --------- Import Library required ------------
 
 TOKEN = config.TOKEN
 
@@ -23,7 +24,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="you | r/help"))
     clock.start()
 
-@tasks.loop(seconds=30)
+@tasks.loop(seconds=30) #Loop every 30sec to check in db if its alert time
 async def clock():
     time_data = os.popen("date +%d/%m/%Y")
     time_data = (time_data.read())[:10]
@@ -60,7 +61,7 @@ async def add(ctx, remind=None, date=None, hour=None):
             if hour == None:
                 hour = "12:00"
 
-            if date[:1] == "0":
+            if date[:1] == "0": #add a 0 on the day date (i remove this on te next update)
                 day = (int(date[:2])-1)
                 day = ("000"+str(day))
                 day = day[2:]
@@ -72,10 +73,9 @@ async def add(ctx, remind=None, date=None, hour=None):
             date_r = day + str(date[2:])
 
             conn = sqlite3.connect('data.db')
-            conn.execute("INSERT INTO DATA (DATE,DATE_R,HOUR,REMIND,ALERT) VALUES (?, ?, ?, ?, 0);", (date, date_r, hour, remind,))
+            conn.execute("INSERT INTO DATA (DATE,DATE_R,HOUR,REMIND,ALERT) VALUES (?, ?, ?, ?, 0);", (date, date_r, hour, remind,)) #save in db the data
             conn.commit()
             conn.close()
-
 
             await ctx.send("Save. I will alert one day before")
 
