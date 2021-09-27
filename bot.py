@@ -61,11 +61,11 @@ async def add(ctx, remind=None, date=None, hour=None):
             if hour == None:
                 hour = "12:00"
 
-            if date[:1] == "0": #add a 0 on the day date (i remove this on te next update)
+            if date[:1] == "0": #if the day is compose to 1 number = soustrat 1 to the day and add a 0 for first number on the day
                 day = (int(date[:2])-1)
                 day = ("000"+str(day))
                 day = day[2:]
-            else:
+            else: #if the day is compose to 2 number = soustrat 1 to the day
                 day = (int(date[:2])-1)
                 day = ("00"+str(day))
                 day = day[2:]
