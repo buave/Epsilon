@@ -7,24 +7,25 @@ from discord.ext import commands , tasks
 import time
 import sqlite3
 import config
-# --------- Import Library required ------------
+from calendar import monthrange
+#----------------- requirement ------------------
 
 TOKEN = config.TOKEN
 
-bot = commands.Bot(command_prefix='r/')
+bot = commands.Bot(command_prefix='e/')
 bot.remove_command('help')
 
-channel_remind = <CHANNEL_ID>
+channel_remind = 893232057596133446
 
 @bot.event
 async def on_ready():
     print('---------------')
     print(bot.user.name)
     print('---------------')
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="you | r/help"))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="you | e/help"))
     clock.start()
 
-@tasks.loop(seconds=30) #Loop every 30sec to check in db if its alert time
+@tasks.loop(seconds=30)
 async def clock():
     time_data = os.popen("date +%d/%m/%Y")
     time_data = (time_data.read())[:10]
@@ -47,7 +48,7 @@ async def clock():
 
 @bot.command()
 async def help(ctx):
-    await ctx.send("Epsilone remind one day before the alert.\n\n__Command:__ \nr/add {**remind**} {**dd/mm/yy**} {**hh:mm**}\n\n   **remind**: Sentence to remember\n    **dd/mm/yy**: date\n    **hh:mm**: hours")
+    await ctx.send("Epsilone remind one day before the alert.\n\n__Commands:__ \nr/add {**remind**} {**dd/mm/yy**} {**hh:mm**}\n   **remind**: Sentence to remember\n    **dd/mm/yy**: date\n    **hh:mm**: hours\n\n\nr/list {**none/all**}\n   **none**: List dates not yet passed\n   **all**: list all dates")
 
 
 @bot.command()
@@ -61,22 +62,67 @@ async def add(ctx, remind=None, date=None, hour=None):
             if hour == None:
                 hour = "12:00"
 
-            if date[:1] == "0": #if the day is compose to 1 number = soustrat 1 to the day and add a 0 for first number on the day
-                day = (int(date[:2])-1)
-                day = ("000"+str(day))
-                day = day[2:]
-            else: #if the day is compose to 2 number = soustrat 1 to the day
-                day = (int(date[:2])-1)
-                day = ("00"+str(day))
-                day = day[2:]
+            month = int((str(date[3:]))[:-5])
+            year = int(str(date[6:]))
+            num_days = monthrange(year, month)[1]
+            day_test = int(str(date[:2]))
 
-            date_r = day + str(date[2:])
+            if day_test <= num_days and day_test > 0:   #Check if the day exist in the month
+                if date == f"01/01/{year}":
+                    date_r = f"{monthrange((year)-1, 12)[1]}/12/{(year)-1}"
+                else:
+                    if date[:1] == "0":
+                        day = (int(date[:2])-1)
+                        day = ("000"+str(day))
+                        day = day[2:]
+                    else:
+                        day = (int(date[:2])-1)
+                        day = ("00"+str(day))
+                        day = day[2:]
 
-            conn = sqlite3.connect('data.db')
-            conn.execute("INSERT INTO DATA (DATE,DATE_R,HOUR,REMIND,ALERT) VALUES (?, ?, ?, ?, 0);", (date, date_r, hour, remind,)) #save in db the data
-            conn.commit()
-            conn.close()
+                    date_r = day + str(date[2:])
+                    if day == "00":
+                        month = month - 1
+                        if month < 10:
+                            month = f"0{str(month)}"
 
-            await ctx.send("Save. I will alert one day before")
+                        num_days = monthrange(int(year), int(month))[1]
+                        date_r = f"{num_days}/{month}/{year}"
+
+                conn = sqlite3.connect('data.db')
+                conn.execute("INSERT INTO DATA (DATE,DATE_R,HOUR,REMIND,ALERT) VALUES (?, ?, ?, ?, 0);", (date, date_r, hour, remind,))
+                conn.commit()
+                conn.close()
+
+                print(date_r)
+                await ctx.send("Save. I will alert one day before")
+
+            else:
+                await ctx.send(f'{day_test} does not exist this month.')
+
+@bot.command()
+async def list(ctx, arg=None):
+    exist = False
+    if arg == None:
+        conn = sqlite3.connect('data.db')
+        data = conn.execute("SELECT DATE,DATE_R,HOUR,REMIND,ALERT FROM DATA")
+        for cron in data:
+            if cron[4] == 0:
+                exist = True
+        if exist == True:
+            data = conn.execute("SELECT DATE,DATE_R,HOUR,REMIND,ALERT FROM DATA")
+            for cron in data:
+                if cron[4] == 0:
+                    await ctx.send(f"Date:{cron[0]} | Recalls on {cron[1]} at {cron[2]} | ``{cron[3]}``")
+        else:
+            await ctx.send("No date recorded")
+    elif arg == "all":
+        conn = sqlite3.connect('data.db')
+        data = conn.execute("SELECT DATE,DATE_R,HOUR,REMIND,ALERT FROM DATA")
+        for cron in data:
+            await ctx.send(f"Date:{cron[0]} | Recalls on {cron[1]} at {cron[2]} | ``{cron[3]}``")
+
+    conn.close()
+
 
 bot.run(TOKEN)
